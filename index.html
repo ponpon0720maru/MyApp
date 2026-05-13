@@ -638,7 +638,6 @@ white-space: nowrap;
     </div>
     <div class="content">
 
-```
   <!-- バランスカード -->
   <div class="balance-card">
     <div class="lbl">今月あと使える金額</div>
@@ -667,12 +666,6 @@ white-space: nowrap;
     </div>
   </div>
 
-  <!-- カテゴリ別 -->
-  <div class="cat-section">
-    <div class="sec-title">カテゴリ別</div>
-    <div class="cat-rows" id="cat-rows"></div>
-  </div>
-
   <!-- NMD -->
   <div class="nmd-bar">
     <div class="nmd-icon">🌸</div>
@@ -684,8 +677,30 @@ white-space: nowrap;
   </div>
 
 </div>
-```
 
+  </div>
+
+  <!-- ===== BREAKDOWN ===== -->
+
+  <div id="screen-breakdown" class="screen">
+    <div class="screen-header">
+      <div class="eyebrow">Breakdown</div>
+      <h1 style="font-style:normal;font-size:22px;">カテゴリ内訳</h1>
+    </div>
+    <div class="content" style="padding:0 16px 16px;">
+      <div class="cat-section" style="flex:1;">
+        <div class="sec-title">今月のカテゴリ別</div>
+        <div class="cat-rows" id="cat-rows"></div>
+      </div>
+      <div class="nmd-bar" style="flex-shrink:0;">
+        <div class="nmd-icon">🌸</div>
+        <div class="nmd-text">
+          <div class="lbl">No Money Day</div>
+          <div class="val"><span id="nmd-num2">0</span><span> 日 / 今月</span></div>
+        </div>
+        <div class="nmd-msg" id="nmd-msg2">今月もマイペースに。</div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== HISTORY ===== -->
@@ -744,6 +759,10 @@ white-space: nowrap;
     <button class="nav-btn active" id="nav-home" onclick="switchScreen('home')">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">ホーム</span>
+    </button>
+    <button class="nav-btn" id="nav-breakdown" onclick="switchScreen('breakdown')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">内訳</span>
     </button>
     <button class="nav-btn" id="nav-history" onclick="switchScreen('history')">
       <span class="nav-icon">📋</span>
@@ -837,7 +856,21 @@ function updateHome() {
         : `予算を ¥${Math.abs(rem).toLocaleString()} オーバー`;
   }
 
-  // cat rows
+  // NMD
+  const days = new Set(mExp.map(e=>e.at.slice(0,10))).size;
+  const elapsed = now.getDate();
+  const nmd = elapsed - days;
+  document.getElementById('nmd-num').textContent = nmd;
+  document.getElementById('nmd-msg').textContent =
+    nmd >= 10 ? '素晴らしいペース 🌸' : nmd >= 5 ? 'マイペースに ✨' : 'ほぼ毎日がんばってる 🎀';
+}
+
+/* ---- breakdown ---- */
+function updateBreakdown() {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const mExp = expenses.filter(e => e.at.startsWith(ym));
+
   const totals = Object.fromEntries(CATS.map(c=>[c.name,0]));
   mExp.forEach(e => { if(totals[e.cat]!==undefined) totals[e.cat]+=e.amt; });
   const maxV = Math.max(...Object.values(totals), 1);
@@ -856,12 +889,10 @@ function updateHome() {
     rows.appendChild(div);
   });
 
-  // NMD
   const days = new Set(mExp.map(e=>e.at.slice(0,10))).size;
-  const elapsed = now.getDate();
-  const nmd = elapsed - days;
-  document.getElementById('nmd-num').textContent = nmd;
-  document.getElementById('nmd-msg').textContent =
+  const nmd = now.getDate() - days;
+  document.getElementById('nmd-num2').textContent = nmd;
+  document.getElementById('nmd-msg2').textContent =
     nmd >= 10 ? '素晴らしいペース 🌸' : nmd >= 5 ? 'マイペースに ✨' : 'ほぼ毎日がんばってる 🎀';
 }
 
@@ -964,15 +995,17 @@ function saveExpense() {
   document.getElementById('modal-overlay').classList.remove('open');
   updateHome();
   updateHistory();
+  updateBreakdown();
   showToast(`¥${amt.toLocaleString()} を記録しました ✨`);
 }
 
 /* ---- nav ---- */
 function switchScreen(name) {
-  ['home','history','setting'].forEach(s => {
+  ['home','breakdown','history','setting'].forEach(s => {
     document.getElementById(`screen-${s}`).classList.toggle('active', s===name);
     document.getElementById(`nav-${s}`).classList.toggle('active', s===name);
   });
+  if (name === 'breakdown') updateBreakdown();
 }
 
 /* ---- utils ---- */
